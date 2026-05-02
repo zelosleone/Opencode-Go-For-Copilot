@@ -1,0 +1,6 @@
+src/
+.vscode/
+.gitignore
+eslint.config.js
+tsconfig.json
+package-lock.json
