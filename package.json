@@ -2,7 +2,7 @@
   "name": "opencode-go-for-copilot",
   "displayName": "OpenCode Go: Copilot Provider",
   "description": "Use Opencode Go models in VS Code Copilot Chat with silent startup model sync and dual OpenAI/Anthropic protocol support.",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "type": "module",
   "publisher": "DenizhanDaklr",
   "license": "MIT",

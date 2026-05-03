@@ -295,7 +295,7 @@ function toChatInformation(model: ModelDefinition, hasApiKey: boolean): vscode.L
     name: model.name,
     family: model.family,
     version: model.version,
-    detail: undefined,
+    detail: model.detail,
     tooltip: hasApiKey ? undefined : AUTH_REQUIRED_DETAIL,
     maxInputTokens: model.maxInputTokens,
     maxOutputTokens: model.maxOutputTokens,
