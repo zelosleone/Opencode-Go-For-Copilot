@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
 const API_KEY_SECRET = 'opencodeGo.apiKey';
+const API_KEY_BACKUP = 'opencodeGo.apiKeyBackup';
 const DEFAULT_BASE_URL = 'https://opencode.ai/zen/go/v1';
 const DEFAULT_MAX_OUTPUT_TOKENS = 8192;
 
@@ -8,9 +9,19 @@ export class AuthManager {
   constructor(private readonly context: vscode.ExtensionContext) {}
 
   async getApiKey(): Promise<string | undefined> {
+    // Primary: try the encrypted SecretStorage.
     const secret = await this.context.secrets.get(API_KEY_SECRET);
     if (secret?.trim()) {
       return secret.trim();
+    }
+
+    const backup = this.context.globalState.get<string>(API_KEY_BACKUP);
+    if (backup?.trim()) {
+      try {
+        await this.context.secrets.store(API_KEY_SECRET, backup.trim());
+      } catch {
+      }
+      return backup.trim();
     }
 
     const configured = vscode.workspace.getConfiguration('opencodeGo').get<string>('apiKey');
@@ -23,10 +34,12 @@ export class AuthManager {
 
   async setApiKey(apiKey: string): Promise<void> {
     await this.context.secrets.store(API_KEY_SECRET, apiKey);
+    await this.context.globalState.update(API_KEY_BACKUP, apiKey);
   }
 
   async deleteApiKey(): Promise<void> {
     await this.context.secrets.delete(API_KEY_SECRET);
+    await this.context.globalState.update(API_KEY_BACKUP, undefined);
   }
 
   async hasApiKey(): Promise<boolean> {
