@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 const API_KEY_SECRET = 'opencodeGo.apiKey';
-const API_KEY_BACKUP = 'opencodeGo.apiKeyBackup';
+const LEGACY_BACKUP_KEY = 'opencodeGo.apiKeyBackup';
 const DEFAULT_BASE_URL = 'https://opencode.ai/zen/go/v1';
 const DEFAULT_MAX_OUTPUT_TOKENS = 8192;
 
@@ -9,24 +9,14 @@ export class AuthManager {
   constructor(private readonly context: vscode.ExtensionContext) {}
 
   async getApiKey(): Promise<string | undefined> {
-    // Primary: try the encrypted SecretStorage.
     const secret = await this.context.secrets.get(API_KEY_SECRET);
     if (secret?.trim()) {
       return secret.trim();
     }
 
-    const backup = this.context.globalState.get<string>(API_KEY_BACKUP);
-    if (backup?.trim()) {
-      try {
-        await this.context.secrets.store(API_KEY_SECRET, backup.trim());
-      } catch {
-      }
-      return backup.trim();
-    }
-
-    const configured = vscode.workspace.getConfiguration('opencodeGo').get<string>('apiKey');
-    if (configured?.trim()) {
-      return configured.trim();
+    const migrated = await this.migrateLegacyKey();
+    if (migrated) {
+      return migrated;
     }
 
     return undefined;
@@ -34,12 +24,12 @@ export class AuthManager {
 
   async setApiKey(apiKey: string): Promise<void> {
     await this.context.secrets.store(API_KEY_SECRET, apiKey);
-    await this.context.globalState.update(API_KEY_BACKUP, apiKey);
+    await this.cleanupLegacyStorage();
   }
 
   async deleteApiKey(): Promise<void> {
     await this.context.secrets.delete(API_KEY_SECRET);
-    await this.context.globalState.update(API_KEY_BACKUP, undefined);
+    await this.cleanupLegacyStorage();
   }
 
   async hasApiKey(): Promise<boolean> {
@@ -78,6 +68,38 @@ export class AuthManager {
     return vscode.workspace
       .getConfiguration('opencodeGo')
       .get<number>('defaultMaxOutputTokens', DEFAULT_MAX_OUTPUT_TOKENS);
+  }
+
+  /**
+   * One-shot migration from legacy plain-text storage locations
+   * (globalState, settings.json) used by older extension versions.
+   */
+  private async migrateLegacyKey(): Promise<string | undefined> {
+    const legacyBackup = this.context.globalState.get<string>(LEGACY_BACKUP_KEY);
+    if (legacyBackup?.trim()) {
+      try {
+        await this.context.secrets.store(API_KEY_SECRET, legacyBackup.trim());
+        await this.context.globalState.update(LEGACY_BACKUP_KEY, undefined);
+        return legacyBackup.trim();
+      } catch {}
+    }
+
+    const configured = vscode.workspace.getConfiguration('opencodeGo').get<string>('apiKey');
+    if (configured?.trim()) {
+      try {
+        await this.context.secrets.store(API_KEY_SECRET, configured.trim());
+      } catch {}
+      return configured.trim();
+    }
+
+    return undefined;
+  }
+
+  /** Remove legacy plain-text copies left by older extension versions. */
+  private async cleanupLegacyStorage(): Promise<void> {
+    try {
+      await this.context.globalState.update(LEGACY_BACKUP_KEY, undefined);
+    } catch {}
   }
 }
 

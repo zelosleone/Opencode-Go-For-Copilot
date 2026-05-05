@@ -61,10 +61,24 @@ const QWEN_CONFIGURATION_SCHEMA = {
   },
 } as const;
 
+const MIMO_CONFIGURATION_SCHEMA = {
+  properties: {
+    thinkingMode: {
+      type: 'string',
+      title: 'Thinking',
+      enum: ['enabled', 'disabled'],
+      enumItemLabels: ['On', 'Off'],
+      default: 'enabled',
+      group: 'navigation',
+    },
+  },
+} as const;
+
 export type ModelConfigurationSchema =
   | typeof DEEPSEEK_CONFIGURATION_SCHEMA
   | typeof GLM_CONFIGURATION_SCHEMA
   | typeof KIMI_CONFIGURATION_SCHEMA
+  | typeof MIMO_CONFIGURATION_SCHEMA
   | typeof QWEN_CONFIGURATION_SCHEMA;
 
 export type ModelConfigurationOptions = vscode.ProvideLanguageModelChatResponseOptions & {
@@ -89,6 +103,8 @@ export function getModelConfigurationSchema(
       return GLM_CONFIGURATION_SCHEMA;
     case 'kimi':
       return KIMI_CONFIGURATION_SCHEMA;
+    case 'mimo':
+      return MIMO_CONFIGURATION_SCHEMA;
     case 'qwen':
       return QWEN_CONFIGURATION_SCHEMA;
     default:
@@ -107,6 +123,8 @@ export function resolveModelRequestConfiguration(
       return resolveGlmRequestConfiguration(options);
     case 'kimi':
       return resolveKimiRequestConfiguration(options);
+    case 'mimo':
+      return resolveMimoRequestConfiguration(options);
     case 'qwen':
       return resolveQwenRequestConfiguration(options);
     case 'minimax':
@@ -231,6 +249,29 @@ function resolveQwenRequestConfiguration(
 
   return {
     openaiBody: Object.keys(body).length > 0 ? body : undefined,
+    preserveOpenAIReasoning: true,
+    preserveAnthropicThinking: false,
+  };
+}
+
+function resolveMimoRequestConfiguration(
+  options: ModelConfigurationOptions,
+): ResolvedModelRequestConfiguration {
+  const mode = readStringOption(options, 'thinkingMode');
+
+  if (mode === 'disabled') {
+    return {
+      openaiBody: {
+        thinking: {
+          type: 'disabled',
+        },
+      },
+      preserveOpenAIReasoning: true,
+      preserveAnthropicThinking: false,
+    };
+  }
+
+  return {
     preserveOpenAIReasoning: true,
     preserveAnthropicThinking: false,
   };
