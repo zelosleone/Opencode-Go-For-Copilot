@@ -1,9 +1,10 @@
 import * as vscode from 'vscode';
 import type { AssistantTurnHistoryEntry } from './history.js';
+import { logger } from './logger.js';
 import type {
   AnthropicMessage,
-  AnthropicThinkingBlock,
   AnthropicTextBlock,
+  AnthropicThinkingBlock,
   AnthropicTool,
   OpenAICompatibleMessage,
   OpenAICompatibleTool,
@@ -150,7 +151,23 @@ export function convertToolsToOpenAI(
     return undefined;
   }
 
-  return tools.map((tool) => ({
+  const validTools = tools.filter((tool) => {
+    if (!tool.name) {
+      logger.warn('convertToolsToOpenAI: removed tool with empty name.');
+      return false;
+    }
+    if (!tool.inputSchema) {
+      logger.warn('convertToolsToOpenAI: removed tool with undefined/empty inputSchema.', tool.name);
+      return false;
+    }
+    return true;
+  });
+
+  if (validTools.length === 0) {
+    return undefined;
+  }
+
+  return validTools.map((tool) => ({
     type: 'function',
     function: {
       name: tool.name,
@@ -167,7 +184,23 @@ export function convertToolsToAnthropic(
     return undefined;
   }
 
-  return tools.map((tool) => ({
+  const validTools = tools.filter((tool) => {
+    if (!tool.name) {
+      logger.warn('convertToolsToAnthropic: removed tool with empty name.');
+      return false;
+    }
+    if (!tool.inputSchema) {
+      logger.warn('convertToolsToAnthropic: removed tool with undefined/empty inputSchema.', tool.name);
+      return false;
+    }
+    return true;
+  });
+
+  if (validTools.length === 0) {
+    return undefined;
+  }
+
+  return validTools.map((tool) => ({
     name: tool.name,
     description: tool.description,
     input_schema: tool.inputSchema as Record<string, unknown> | undefined,
