@@ -205,7 +205,6 @@ function resolveGlmRequestConfiguration(
     openaiBody: {
       thinking: {
         type: 'enabled',
-        clear_thinking: false,
       },
     },
     preserveOpenAIReasoning: true,
