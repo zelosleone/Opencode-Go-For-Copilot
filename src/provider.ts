@@ -118,7 +118,7 @@ export class OpenCodeGoChatProvider implements vscode.LanguageModelChatProvider 
     logger.show();
 
     void vscode.window.showInformationMessage(
-      'Opencode Go model list written to the output log. Look for DeepSeek V4 Pro and DeepSeek V4 Flash.',
+      'Opencode Go model list written to the output log. Look for GLM-5.2, Kimi K2.7 Code, MiniMax M3, Qwen3.7 Max, and Hy3 Preview.',
     );
   }
 

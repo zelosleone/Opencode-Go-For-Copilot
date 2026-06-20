@@ -23,6 +23,16 @@ export interface ModelDefinition {
 
 const KNOWN_MODELS: readonly ModelDefinition[] = [
   defineModel({
+    id: withProviderPrefix('glm-5.2'),
+    apiModel: 'glm-5.2',
+    name: 'GLM-5.2',
+    family: 'glm',
+    version: '5.2',
+    protocol: 'openai',
+    maxInputTokens: 1_000_000,
+    maxOutputTokens: 131_072,
+  }),
+  defineModel({
     id: withProviderPrefix('glm-5.1'),
     apiModel: 'glm-5.1',
     name: 'GLM-5.1',
@@ -48,6 +58,16 @@ const KNOWN_MODELS: readonly ModelDefinition[] = [
     name: 'Kimi K2.5',
     family: 'kimi',
     version: 'k2.5',
+    protocol: 'openai',
+    maxInputTokens: 262_144,
+    maxOutputTokens: 65_536,
+  }),
+  defineModel({
+    id: withProviderPrefix('kimi-k2.7-code'),
+    apiModel: 'kimi-k2.7-code',
+    name: 'Kimi K2.7 Code',
+    family: 'kimi',
+    version: 'k2.7-code',
     protocol: 'openai',
     maxInputTokens: 262_144,
     maxOutputTokens: 65_536,
@@ -113,6 +133,16 @@ const KNOWN_MODELS: readonly ModelDefinition[] = [
     maxOutputTokens: 65_536,
   }),
   defineModel({
+    id: withProviderPrefix('minimax-m3'),
+    apiModel: 'minimax-m3',
+    name: 'MiniMax M3',
+    family: 'minimax',
+    version: 'm3',
+    protocol: 'anthropic',
+    maxInputTokens: 1_000_000,
+    maxOutputTokens: 131_072,
+  }),
+  defineModel({
     id: withProviderPrefix('minimax-m2.7'),
     apiModel: 'minimax-m2.7',
     name: 'MiniMax M2.7',
@@ -128,6 +158,26 @@ const KNOWN_MODELS: readonly ModelDefinition[] = [
     name: 'Qwen3.5 Plus',
     family: 'qwen',
     version: '3.5-plus',
+    protocol: 'openai',
+    maxInputTokens: 262_144,
+    maxOutputTokens: 65_536,
+  }),
+  defineModel({
+    id: withProviderPrefix('qwen3.7-max'),
+    apiModel: 'qwen3.7-max',
+    name: 'Qwen3.7 Max',
+    family: 'qwen',
+    version: '3.7-max',
+    protocol: 'openai',
+    maxInputTokens: 1_000_000,
+    maxOutputTokens: 65_536,
+  }),
+  defineModel({
+    id: withProviderPrefix('qwen3.7-plus'),
+    apiModel: 'qwen3.7-plus',
+    name: 'Qwen3.7 Plus',
+    family: 'qwen',
+    version: '3.7-plus',
     protocol: 'openai',
     maxInputTokens: 262_144,
     maxOutputTokens: 65_536,
@@ -161,6 +211,16 @@ const KNOWN_MODELS: readonly ModelDefinition[] = [
     protocol: 'openai',
     maxInputTokens: 1_000_000,
     maxOutputTokens: 384_000,
+  }),
+  defineModel({
+    id: withProviderPrefix('hy3-preview'),
+    apiModel: 'hy3-preview',
+    name: 'Hy3 Preview',
+    family: 'hy3',
+    version: 'preview',
+    protocol: 'openai',
+    maxInputTokens: 262_144,
+    maxOutputTokens: 65_536,
   }),
 ];
 
@@ -274,6 +334,12 @@ function humanizeModelId(id: string): string {
       if (segment === 'qwen3.6') {
         return 'Qwen3.6';
       }
+      if (segment === 'qwen3.7') {
+        return 'Qwen3.7';
+      }
+      if (segment === 'hy3') {
+        return 'Hy3';
+      }
       if (segment === 'deepseek') {
         return 'DeepSeek';
       }
@@ -304,6 +370,9 @@ function inferFamily(id: string): string {
   if (id.startsWith('qwen')) {
     return 'qwen';
   }
+  if (id.startsWith('hy3-')) {
+    return 'hy3';
+  }
 
   return 'opencode-go';
 }
@@ -320,10 +389,20 @@ function inferMaxInputTokens(id: string): number {
   if (id.startsWith('mimo-v2-pro') || id.startsWith('mimo-v2.5')) {
     return 1_000_000;
   }
+  if (id.startsWith('glm-5.2')) {
+    return 1_000_000;
+  }
+  if (id.startsWith('minimax-m3')) {
+    return 1_000_000;
+  }
+  if (id.startsWith('qwen3.7-max')) {
+    return 1_000_000;
+  }
   if (id.startsWith('glm-')) {
     return 202_752;
   }
   if (
+    id.startsWith('hy3-') ||
     id.startsWith('kimi-') ||
     id.startsWith('minimax-') ||
     id.startsWith('mimo-') ||
@@ -339,13 +418,19 @@ function inferMaxOutputTokens(id: string): number {
   if (id.startsWith('deepseek-')) {
     return 384_000;
   }
-  if (id.startsWith('minimax-m2.7')) {
+  if (id.startsWith('minimax-m3') || id.startsWith('minimax-m2.7')) {
     return 131_072;
   }
   if (id.startsWith('mimo-')) {
     return 128_000;
   }
   if (id.startsWith('kimi-') || id.startsWith('minimax-m2.5') || id.startsWith('qwen')) {
+    return 65_536;
+  }
+  if (id.startsWith('glm-5.2')) {
+    return 131_072;
+  }
+  if (id.startsWith('hy3-')) {
     return 65_536;
   }
   if (id.startsWith('glm-')) {
