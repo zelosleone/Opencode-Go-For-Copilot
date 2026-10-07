@@ -43,6 +43,7 @@ export class OpenCodeGoChatProvider implements vscode.LanguageModelChatProvider 
   private readonly assistantTurnHistory: Map<number, AssistantTurnHistoryEntry>;
   private historyModelId: string | undefined;
   private nextAssistantTurnIndex: number;
+  private sessionId: string;
   private charsPerToken = 4;
 
   readonly onDidChangeLanguageModelChatInformation =
@@ -58,6 +59,7 @@ export class OpenCodeGoChatProvider implements vscode.LanguageModelChatProvider 
     this.historyModelId = persisted?.modelId;
     this.nextAssistantTurnIndex =
       persisted?.nextAssistantTurnIndex ?? this.assistantTurnHistory.size;
+    this.sessionId = crypto.randomUUID();
 
     context.subscriptions.push(
       this.onDidChangeLanguageModelChatInformationEmitter,
@@ -153,7 +155,7 @@ export class OpenCodeGoChatProvider implements vscode.LanguageModelChatProvider 
       this.historyModelId = model.id;
     }
 
-    const client = new OpenCodeClient(this.authManager.getBaseUrl(), apiKey);
+    const client = new OpenCodeClient(this.authManager.getBaseUrl(), apiKey, this.sessionId);
     const modelConfig = options as ModelConfigurationOptions;
     const requestConfiguration = resolveModelRequestConfiguration(model, modelConfig);
 
@@ -254,6 +256,7 @@ export class OpenCodeGoChatProvider implements vscode.LanguageModelChatProvider 
     this.assistantTurnHistory.clear();
     this.nextAssistantTurnIndex = 0;
     this.historyModelId = modelId;
+    this.sessionId = crypto.randomUUID();
     void this.persistAssistantTurnHistory();
   }
 
