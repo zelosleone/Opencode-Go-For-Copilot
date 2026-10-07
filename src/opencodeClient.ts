@@ -78,6 +78,7 @@ export class OpenCodeClient {
     private readonly baseUrl: string,
     private readonly apiKey: string,
     private readonly sessionId: string,
+    private readonly userAgent: string,
   ) {}
 
   async streamOpenAIChat(
@@ -102,6 +103,7 @@ export class OpenCodeClient {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${this.apiKey}`,
+          'User-Agent': this.userAgent,
           'x-opencode-session': this.sessionId,
         },
         body: JSON.stringify({
@@ -205,6 +207,7 @@ export class OpenCodeClient {
           'Content-Type': 'application/json',
           'x-api-key': this.apiKey,
           'anthropic-version': '2023-06-01',
+          'User-Agent': this.userAgent,
           'x-opencode-session': this.sessionId,
         },
         body: JSON.stringify({

@@ -96,6 +96,12 @@ export interface ResolvedModelRequestConfiguration {
 export function getModelConfigurationSchema(
   model: ModelDefinition,
 ): ModelConfigurationSchema | undefined {
+  // These options are request fields of the chat completions endpoint; Anthropic-endpoint models
+  // (MiniMax, newer Qwen) don't get options the request would ignore.
+  if (model.protocol !== 'openai') {
+    return undefined;
+  }
+
   switch (model.family) {
     case 'deepseek':
       return DEEPSEEK_CONFIGURATION_SCHEMA;

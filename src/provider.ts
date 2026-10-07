@@ -27,6 +27,8 @@ import { OpenCodeClient } from './opencodeClient.js';
 import type { UsageInfo } from './protocolTypes.js';
 
 const AUTH_REQUIRED_DETAIL = 'Run Opencode Go: Set API Key to configure access.';
+// The model list is read again every half hour, so models Go adds or drops show up without a reload.
+const CATALOG_REFRESH_MS = 30 * 60 * 1000;
 
 type ModelPickerInformation = vscode.LanguageModelChatInformation & {
   isUserSelectable?: boolean;
@@ -44,6 +46,7 @@ export class OpenCodeGoChatProvider implements vscode.LanguageModelChatProvider 
   private historyModelId: string | undefined;
   private nextAssistantTurnIndex: number;
   private sessionId: string;
+  private readonly userAgent: string;
   private charsPerToken = 4;
 
   readonly onDidChangeLanguageModelChatInformation =
@@ -51,7 +54,9 @@ export class OpenCodeGoChatProvider implements vscode.LanguageModelChatProvider 
 
   constructor(private readonly context: vscode.ExtensionContext) {
     this.authManager = new AuthManager(context);
-    this.modelCatalog = new ModelCatalog(this.authManager);
+    // OpenCode Go asks clients to name themselves rather than send a generic HTTP library's name.
+    this.userAgent = `opencode-go-for-copilot/${String(context.extension.packageJSON.version)}`;
+    this.modelCatalog = new ModelCatalog(this.authManager, this.userAgent);
     const persisted = context.workspaceState.get<AssistantTurnHistoryState>(
       ASSISTANT_TURN_HISTORY_STORAGE_KEY,
     );
@@ -82,6 +87,8 @@ export class OpenCodeGoChatProvider implements vscode.LanguageModelChatProvider 
       }),
     );
 
+    const catalogTimer = setInterval(() => void this.syncModelCatalog(), CATALOG_REFRESH_MS);
+    context.subscriptions.push({ dispose: () => clearInterval(catalogTimer) });
     void this.syncModelCatalog();
   }
 
@@ -100,7 +107,11 @@ export class OpenCodeGoChatProvider implements vscode.LanguageModelChatProvider 
 
   async syncModelCatalog(): Promise<void> {
     try {
-      await this.modelCatalog.refresh();
+      const { changed, count, skipped } = await this.modelCatalog.refresh();
+      if (!changed) {
+        return;
+      }
+      logger.info(`Opencode Go models: ${count}.${skipped.length ? ` Left out (Responses API): ${skipped.join(', ')}.` : ''}`);
       this.onDidChangeLanguageModelChatInformationEmitter.fire();
     } catch (error) {
       logger.error('Failed to sync Opencode Go model list.', error);
@@ -119,9 +130,7 @@ export class OpenCodeGoChatProvider implements vscode.LanguageModelChatProvider 
     }
     logger.show();
 
-    void vscode.window.showInformationMessage(
-      'Opencode Go model list written to the output log. Look for GLM-5.2, Kimi K2.7 Code, MiniMax M3, Qwen3.7 Max, and Hy3 Preview.',
-    );
+    void vscode.window.showInformationMessage('Opencode Go model list written to the output log.');
   }
 
   async provideLanguageModelChatInformation(
@@ -155,7 +164,9 @@ export class OpenCodeGoChatProvider implements vscode.LanguageModelChatProvider 
       this.historyModelId = model.id;
     }
 
-    const client = new OpenCodeClient(this.authManager.getBaseUrl(), apiKey, this.sessionId);
+    // One session id per Copilot conversation, as OpenCode Go asks, for its routing and prompt caching.
+    const sessionId = conversationId(options) ?? this.sessionId;
+    const client = new OpenCodeClient(this.authManager.getBaseUrl(), apiKey, sessionId, this.userAgent);
     const modelConfig = options as ModelConfigurationOptions;
     const requestConfiguration = resolveModelRequestConfiguration(model, modelConfig);
 
@@ -289,6 +300,12 @@ export class OpenCodeGoChatProvider implements vscode.LanguageModelChatProvider 
       entries: [...this.assistantTurnHistory.entries()],
     } satisfies AssistantTurnHistoryState);
   }
+}
+
+// Copilot passes its conversation id in modelOptions.
+function conversationId(options: vscode.ProvideLanguageModelChatResponseOptions): string | undefined {
+  const id: unknown = options.modelOptions?._conversationId;
+  return typeof id === 'string' && id ? id : undefined;
 }
 
 function toChatInformation(model: ModelDefinition, hasApiKey: boolean): vscode.LanguageModelChatInformation {
