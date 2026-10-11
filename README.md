@@ -2,6 +2,8 @@
 
 Adds OpenCode Go models to the VS Code Copilot model picker.
 
+> Also from the same developer: [Lodestar](https://marketplace.visualstudio.com/items?itemName=DenizhanDaklr.lodestar) walks you through how code works and reviews your changes, on any model in VS Code, including this extension's. $10, one time.
+
 ## Setup
 
 1. Install the extension.

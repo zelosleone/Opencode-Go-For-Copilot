@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { logger } from './logger.js';
+import { scheduleLodestarNotice } from './lodestar.js';
 import { OpenCodeGoChatProvider } from './provider.js';
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -16,6 +17,7 @@ export function activate(context: vscode.ExtensionContext): void {
       vscode.lm.registerLanguageModelChatProvider('opencode-go', provider),
     );
 
+    scheduleLodestarNotice(context);
     logger.info('Opencode Go extension activated.');
   } catch (error) {
     logger.error('Failed to activate Opencode Go extension.', error);
